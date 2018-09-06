@@ -10,7 +10,7 @@ Prerequisites
 -------------
 
 * GCC version >= 4.9 (supports C++14)
-* SeqAn core library, version 2.3.1? (https://github.com/seqan/seqan)
+* SeqAn core library, version 2.3.1 (https://github.com/seqan/seqan)
 * SDSL - Succinct Data Structure Lirbrary (https://github.com/simongog/sdsl-lite)
 * kseq.h from HTSlib (https://github.com/samtools/htslib)
 
