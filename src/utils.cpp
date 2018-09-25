@@ -62,7 +62,7 @@ std::string currentTime()
 void printStatus(const char * message)
 {
     // Print time and message *without* newline.
-    std::cerr << "[bctools " << currentTime() << "] " << message << "... " << std::flush;
+    std::cerr << "[bcctools " << currentTime() << "] " << message << "... " << std::flush;
 }
 
 void printStatus(std::ostringstream & message)
@@ -89,7 +89,7 @@ void printDone()
 void printInfo(const char * message)
 {
     // Print time, message and newline.
-    std::cerr << "[bctools " << currentTime() << "] " << message << std::endl;
+    std::cerr << "[bcctools " << currentTime() << "] " << message << std::endl;
 }
 
 void printInfo(std::ostringstream & message)
@@ -106,7 +106,7 @@ void printInfo(std::ostringstream & message)
 void printWarning(const char * message)
 {
     // Print warning message and newline.
-    std::cerr << "[bctools WARNING] " << message << std::endl;
+    std::cerr << "[bcctools WARNING] " << message << std::endl;
 }
 
 void printWarning(std::ostringstream & message)

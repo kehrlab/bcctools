@@ -176,7 +176,7 @@ void setupParserStats(ArgumentParser & parser, Options & options)
     setDate(parser, DATE);
     addUsageLine(parser, "[\\fIOPTIONS\\fP] \\fIFASTQ1\\fP");
 
-    addDescription(parser, "Computes simple barcode statistics from a bctools TSV file or a barcoded FASTQ, SAM, or "
+    addDescription(parser, "Computes simple barcode statistics from a bcctools TSV file or a barcoded FASTQ, SAM, or "
         "BAM file.");
 
     // Define the required arguments.

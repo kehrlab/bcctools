@@ -2,4 +2,4 @@ build/*.o
 seqan
 *~
 test
-bctools
+bcctools

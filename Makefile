@@ -1,4 +1,4 @@
-TARGET = bctools
+TARGET = bcctools
 BUILD_DIR = ./build
 SRC_DIR = ./src
 

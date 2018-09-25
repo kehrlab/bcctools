@@ -1,4 +1,4 @@
-bctools
+bcctools
 =======
 
 A toolbox for correcting barcodes in 10X linked-read sequencing data.
@@ -10,7 +10,7 @@ Prerequisites
 -------------
 
 * GCC version >= 4.9 (supports C++14)
-* SeqAn core library, version 2.3.1 (https://github.com/seqan/seqan)
+* SeqAn core library, version 2.3.1? (https://github.com/seqan/seqan)
 * SDSL - Succinct Data Structure Lirbrary (https://github.com/simongog/sdsl-lite)
 * kseq.h from HTSlib (https://github.com/samtools/htslib)
 
@@ -24,9 +24,9 @@ Installation
 2. Download and install the SDSL.
 3. Download HTSlib or just put the kseq.h header file into a folder named htslib.
 3. Edit lines 14-17 in the Makefile to point to the directories of SeqAn, SDSL and HTSlib.
-4. Run 'make' in the bctools directory.
+4. Run 'make' in the bcctools directory.
 
-If everything is setup correctly, this will create the binary 'bctools'.
+If everything is setup correctly, this will create the binary 'bcctools'.
 
 
 
@@ -39,40 +39,40 @@ Optionally, you can specify a barcode whitelist file.
 
 The program consists of several commands, which are listed when running
 
-    ./bctools --help
+    ./bcctools --help
 
 For a short description of each command and an overview of arguments and options, you can run
 
-    ./bctools <COMMAND> --help
+    ./bcctools <COMMAND> --help
 
 If you need the output to be sorted and/or converted to SAM, BAM, or (gzipped) FASTQ format, you can run the provided bash script. For a short description of options and arguments of this script run
 
-    ./scripts/run_bctools -h
+    ./scripts/run_bcctools -h
 
 ### The whitelist command
 
-    ./bctools whitelist [OPTIONS] <FASTQ 1 file>
+    ./bcctools whitelist [OPTIONS] <FASTQ 1 file>
 
 Creates a barcode whitelist based on barcode occurence in the data.
 Creating a whitelist from your data is recommended (rather than using the 10X whitelist) to reduce the number of alternatives during correction and prevents false corrections.
 
 ### The index command
 
-    ./bctools index [OPTIONS] <whitelist file>
+    ./bcctools index [OPTIONS] <whitelist file>
 
 Creates a barcode index from the given barcode whitelist and writes it to disk. This command is optional as the index can be created on the fly in the 'correct' command.
 
 ### The correct command
 
-    ./bctools correct [OPTIONS] <whitelist file> <FASTQ 1 file> <FASTQ 2 file>
+    ./bcctools correct [OPTIONS] <whitelist file> <FASTQ 1 file> <FASTQ 2 file>
 
 Corrects barcodes of the given barcoded read pair data using the specified barcode whitelist. A barcode index is computed on the fly unless index files are present for the specified barcode whitelist. The output is a tab-separated file holding one read pair per line as decribed below.
 
 ### The stats command
 
-    ./bctools stats [OPTIONS] <Corrected (gzipped) FASTQ 1 file>
-    ./bctools stats [OPTIONS] <Corrected SAM/BAM file>
-    ./bctools stats [OPTIONS] <Corrected TSV file>
+    ./bcctools stats [OPTIONS] <Corrected (gzipped) FASTQ 1 file>
+    ./bcctools stats [OPTIONS] <Corrected SAM/BAM file>
+    ./bcctools stats [OPTIONS] <Corrected TSV file>
 
 Computes the number of read pairs with whitelisted, corrected and unrecognized barcodes, a barcode occurrence histogram and counts quality values of corrected barcode positions.
 
@@ -82,16 +82,16 @@ Computes the number of read pairs with whitelisted, corrected and unrecognized b
 Example
 -------
 
-    mkdir bctools_example && cd bctools_example/
+    mkdir bcctools_example && cd bcctools_example/
     ln -s /path/to/first.fq.gz
     ln -s /path/to/second.fq.gz
 
-    ./bctools whitelist -o whitelist.txt first.fq.gz
-    ./bctools correct whitelist.txt first.fq.gz second.fq.gz > corrected.tsv
+    ./bcctools whitelist -o whitelist.txt first.fq.gz
+    ./bcctools correct whitelist.txt first.fq.gz second.fq.gz > corrected.tsv
 
 Using the bash script to create a BAM file sorted by the corrected barcode sequence:
 
-    ./script/run_bctools -f bam first.fq.gz second.fq.gz
+    ./script/run_bcctools -f bam first.fq.gz second.fq.gz
 
 
 Output format

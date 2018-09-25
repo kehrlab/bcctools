@@ -14,7 +14,7 @@ usage()
     echo "SYNOPSIS" 1>&2
     echo "    ./$0 [OPTIONS] <FASTQ1> <FASTQ2>" 1>&2
     echo "" 1>&2
-    echo "    Script for correcting barcodes with bctools, sorting the output by barcode" 1>&2
+    echo "    Script for correcting barcodes with bcctools, sorting the output by barcode" 1>&2
     echo "    with Unix sort, and file conversion to (gzipped) FASTQ, SAM, or BAM." 1>&2
     echo "" 1>&2
     echo "    -h" 1>&2
@@ -22,7 +22,7 @@ usage()
     echo "" 1>&2
     echo "BARCODE CORRECTION OPTIONS" 1>&2
     echo "    -b  STR" 1>&2
-    echo "        Path to bctools program, e.g. '/path/to/bctools'. Default: bctools" 1>&2
+    echo "        Path to bcctools program, e.g. '/path/to/bcctools'. Default: bcctools" 1>&2
     echo "    -w  STR" 1>&2
     echo "        Name of whitelist file. If file does not exist, whitelist is inferred" 1>&2
     echo "        from the data and written to this file." 1>&2
@@ -33,7 +33,7 @@ usage()
     echo "" 1>&2
     echo "SORTING OPTIONS" 1>&2
     echo "    -n" 1>&2
-    echo "        Do not sort output of bctools by barcode." 1>&2
+    echo "        Do not sort output of bcctools by barcode." 1>&2
     echo "    -S  SIZE" 1>&2
     echo "        Size for main memory buffer, e.g. '8G'. Value is passed to Unix sort" 1>&2
     echo "        -S, --buffer-size option. Default: 4G" 1>&2
@@ -112,7 +112,7 @@ convert_sam()
 ################################################################################
 ### MAIN ###
 
-bctools="bctools"
+bcctools="bcctools"
 whitelist="-"
 cutoff="inferred"
 alts=4
@@ -126,7 +126,7 @@ samtools="samtools"
 while getopts 'hb:w:c:a:nS:T:o:f:s:' OPTION; do
     case "${OPTION}" in
         b)
-            bctools="${OPTARG}"
+            bcctools="${OPTARG}"
             ;;
         w)
             whitelist="${OPTARG}"
@@ -199,7 +199,7 @@ echo "    FASTQ1: $FASTQ1" 1>&2
 echo "    FASTQ2: $FASTQ2" 1>&2
 echo "" 1>&2
 echo "Options:" 1>&2
-echo "    Path to bctools program:       $bctools" 1>&2
+echo "    Path to bcctools program:      $bcctools" 1>&2
 echo "    Whitelist file:                $whitelist" 1>&2
 echo "    Whitelist cutoff:              $cutoff" 1>&2
 echo "    Max. num. of alt. corrections: $alts" 1>&2
@@ -211,15 +211,15 @@ echo "    Output format:                 $format" 1>&2
 echo "    Path to samtools program:      $samtools" 1>&2
 echo "" 1>&2
 
-# Create a barcode whitelist by running bctools whitelist.
+# Create a barcode whitelist by running bcctools whitelist.
 if [ ! -f "${whitelist}" ]; then
     if [ "${cutoff}" = "inferred" ]; then
-        ${bctools} whitelist -o ${whitelist} ${FASTQ1}
+        ${bcctools} whitelist -o ${whitelist} ${FASTQ1}
     else
-        ${bctools} whitelist -o ${whitelist} -c ${cutoff} ${FASTQ1}
+        ${bcctools} whitelist -o ${whitelist} -c ${cutoff} ${FASTQ1}
     fi
 else
-    echo "NOTE: Whitelist file exists. Skipping '${bctools} whitelist' command." 1>&2
+    echo "NOTE: Whitelist file exists. Skipping '${bcctools} whitelist' command." 1>&2
     echo "      If you want the whitelist to be created, remove the existing file" 1>&2
     echo "      or specify another filename." 1>&2
 fi
@@ -229,7 +229,7 @@ echo "" 1>&2
 if [ ${sort} = "on" ]; then
     case "${format}" in
         "fastq.gz")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | sort -k3,3 ${sortopt} \
             | tee >(convert_and_compress_first) \
             | convert_and_compress_second
@@ -237,7 +237,7 @@ if [ ${sort} = "on" ]; then
             echo "Output written to '${outprefix}.1.fastq.gz' and '${outprefix}.2.fastq.gz'." 1>&2
             ;;
         "fastq")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | sort -k3,3 ${sortopt} \
             | tee >(convert_first) \
             | convert_second
@@ -245,7 +245,7 @@ if [ ${sort} = "on" ]; then
             echo "Output written to '${outprefix}.1.fastq' and '${outprefix}.2.fastq'." 1>&2
             ;;
         "sam")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | sort -k3,3 ${sortopt} \
             | convert_sam \
             > ${outprefix}.sam
@@ -253,7 +253,7 @@ if [ ${sort} = "on" ]; then
             echo "Output written to '${outprefix}.sam'." 1>&2
             ;;
         "bam")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | sort -k3,3 ${sortopt} \
             | convert_sam \
             | ${samtools} view -Sb \
@@ -262,7 +262,7 @@ if [ ${sort} = "on" ]; then
             echo "Output written to '${outprefix}.bam'." 1>&2
             ;;
         "tsv")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | sort -k3,3 ${sortopt} \
             > ${outprefix}.tsv
             echo "" 1>&2
@@ -271,28 +271,28 @@ if [ ${sort} = "on" ]; then
 else
     case "${format}" in
         "fastq.gz")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | tee >(convert_and_compress_first) \
             | convert_and_compress_second
             echo "" 1>&2
             echo "Output written to '${outprefix}.1.fastq.gz' and '${outprefix}.2.fastq.gz'." 1>&2
             ;;
         "fastq")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | tee >(convert_first) \
             | convert_second
             echo "" 1>&2
             echo "Output written to '${outprefix}.1.fastq' and '${outprefix}.2.fastq'." 1>&2
             ;;
         "sam")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | convert_sam \
             > ${outprefix}.sam
             echo "" 1>&2
             echo "Output written to '${outprefix}.sam'." 1>&2
             ;;
         "bam")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             | convert_sam \
             | samtools view -Sb \
             > ${outprefix}.bam
@@ -300,7 +300,7 @@ else
             echo "Output written to '${outprefix}.bam'." 1>&2
             ;;
         "tsv")
-            ${bctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
+            ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
             > ${outprefix}.tsv
             echo "" 1>&2
             echo "Output written to '${outprefix}.tsv'." 1>&2

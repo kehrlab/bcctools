@@ -12,7 +12,7 @@ using namespace seqan;
 
 void printHelp(char const * name)
 {
-    std::cerr << "bctools - Barcode correction, sorting, etc." << std::endl;
+    std::cerr << "bcctools - Barcode correction, sorting, etc." << std::endl;
     std::cerr << "===========================================" << std::endl;
     std::cerr << std::endl;
     std::cerr << "\033[1mSYNOPSIS\033[0m" << std::endl;
