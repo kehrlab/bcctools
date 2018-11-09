@@ -28,7 +28,7 @@ struct Options
     unsigned numAlts;
 
     Options() :
-        bcLength(16), spacerLength(7), whitelistCutoff(0), minEntropy(0.5), numAlts(4)
+        bcLength(16), spacerLength(7), whitelistCutoff(0), minEntropy(0.5), numAlts(16)
     {}
 };
 
