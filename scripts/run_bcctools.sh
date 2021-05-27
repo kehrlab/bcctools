@@ -230,7 +230,7 @@ if [ ${sort} = "on" ]; then
     case "${format}" in
         "fastq.gz")
             ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
-            | sort -k3,3 ${sortopt} \
+            | sort -k2,2 ${sortopt} \
             | tee >(convert_and_compress_first) \
             | convert_and_compress_second
             echo "" 1>&2
@@ -238,7 +238,7 @@ if [ ${sort} = "on" ]; then
             ;;
         "fastq")
             ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
-            | sort -k3,3 ${sortopt} \
+            | sort -k2,2 ${sortopt} \
             | tee >(convert_first) \
             | convert_second
             echo "" 1>&2
@@ -246,7 +246,7 @@ if [ ${sort} = "on" ]; then
             ;;
         "sam")
             ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
-            | sort -k3,3 ${sortopt} \
+            | sort -k2,2 ${sortopt} \
             | convert_sam \
             > ${outprefix}.sam
             echo "" 1>&2
@@ -254,7 +254,7 @@ if [ ${sort} = "on" ]; then
             ;;
         "bam")
             ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
-            | sort -k3,3 ${sortopt} \
+            | sort -k2,2 ${sortopt} \
             | convert_sam \
             | ${samtools} view -Sb \
             > ${outprefix}.bam
@@ -263,7 +263,7 @@ if [ ${sort} = "on" ]; then
             ;;
         "tsv")
             ${bcctools} correct -a ${alts} ${whitelist} ${FASTQ1} ${FASTQ2} \
-            | sort -k3,3 ${sortopt} \
+            | sort -k2,2 ${sortopt} \
             > ${outprefix}.tsv
             echo "" 1>&2
             echo "Output written to '${outprefix}.tsv'." 1>&2
