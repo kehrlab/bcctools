@@ -117,4 +117,4 @@ SECOND READ QUALITY STRING | The quality string of the second read in the read p
 Contact
 -------
 
-For questions and comments contact birte.kehr [at] bihealth.de or create an issue.
+For questions and comments contact birte.kehr [at] ukr.de or create an issue.
