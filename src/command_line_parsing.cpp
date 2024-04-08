@@ -95,7 +95,7 @@ void setupParserIndex(ArgumentParser & parser, Options & options)
 
     addDescription(parser, "Constructs an index of a barcode whitelist file. The --alts option determines the maximum "
         "number of alternative barcode corrections (= whitelisted barcodes) that will be found when using the "
-        "ouputted index in the 'correct' command. Any barcode that has more alternative corrections with the same "
+        "ouput index in the 'correct' command. Any barcode that has more alternative corrections with the same "
         "number of substitutions will not be corrected. The value specified with the --alts option will be rounded to "
         "the next larger power of 2. With larger values, index construction takes longer and the index takes up more "
         "space.");
@@ -181,13 +181,55 @@ void setupParserStats(ArgumentParser & parser, Options & options)
 
     // Define the required arguments.
     ArgParseArgument arg1(ArgParseArgument::INPUT_FILE, "INPUT_FILE", false);
-    setHelpText(arg1, "File in TSV/(gzipped) FASTQ/SAM/BAM format containing barcode-corrected read pairs. In case of FASTQ specify only file of first reads in pair.");
+    setHelpText(arg1, "File in TSV/(gzipped) FASTQ/SAM/BAM format containing barcode-corrected read pairs. In case of "
+        "FASTQ specify only file of first reads in pair.");
     setValidValues(arg1, "fq fastq fq.gz fastq.gz sam bam tsv");
     addArgument(parser, arg1);
 
     // Add options and advanced options. The latter are only visible in the full help.
     addOptionsStats(parser, options);
     addAdvancedOptionsStats(parser, options);
+}
+
+void addOptionsDedup(ArgumentParser & parser, Options & options)
+{
+    addOption(parser, ArgParseOption("m", "minMatches", "Minimum number of matching bases at the beginning of two reads in order to be considered as potential duplicates for sequence based duplicate detection.", ArgParseArgument::INTEGER));
+    setDefaultValue(parser, "minMatches", options.minMatches);
+    setMinValue(parser, "minMatches", "1");
+
+    addOption(parser, ArgParseOption("d", "maxDiffRate", "Maxixmum number of differences per read length for alignment.", ArgParseArgument::DOUBLE));
+    setDefaultValue(parser, "maxDiffRate", options.maxDiffRate);
+    //setMinValue(parser, "maxDiffRate", "0.001");
+
+    addOption(parser, ArgParseOption("q", "minQual", "Minimum quality value for a position in the quality string to be considered for total read quality.", ArgParseArgument::INTEGER));
+    setDefaultValue(parser, "minQual", options.minQual);
+    setMinValue(parser, "minQual", "0");
+    setMaxValue(parser, "minQual", "42");
+}
+
+void addAdvancedOptionsDedup(ArgumentParser & /*parser*/, Options & /*options*/)
+{
+    // addOption(parser, ArgParseOption("l", "long", "Description", ArgParseArgument::INTEGER));
+    // setAdvanced(parser, "long");
+}
+
+void setupParserDedup(ArgumentParser & parser, Options & options)
+{
+    setVersion(parser, VERSION);
+    setDate(parser, DATE);
+    addUsageLine(parser, "[\\fIOPTIONS\\fP] \\fITSV\\fP");
+
+    addDescription(parser, "Marks duplicate reads similar to 'Picard MarkDuplicates'. Takes as input a TSV file as "
+        "written by the correct command that needs to be sorted by barcode.");
+
+    // Define the required arguments.
+    ArgParseArgument arg1(ArgParseArgument::INPUT_FILE, "INPUT_FILE", false);
+    setValidValues(arg1, "tsv");
+    addArgument(parser, arg1);
+
+    // Add options and advanced options. The latter are only visible in the full help.
+    addOptionsDedup(parser, options);
+    addAdvancedOptionsDedup(parser, options);
 }
 
 void getArgumentValuesWhitelist(Options & options, ArgumentParser & parser)
@@ -208,6 +250,11 @@ void getArgumentValuesCorrect(Options & options, ArgumentParser & parser)
 }
 
 void getArgumentValuesStats(Options & options, ArgumentParser & parser)
+{
+    getArgumentValue(options.inputFile, parser, 0);
+}
+
+void getArgumentValuesDedup(Options & options, ArgumentParser & parser)
 {
     getArgumentValue(options.inputFile, parser, 0);
 }
@@ -234,6 +281,13 @@ void getOptionValuesCorrect(Options & options, ArgumentParser & parser)
 void getOptionValuesStats(Options & options, ArgumentParser & parser)
 {
     getOptionValue(options.outFile, parser, "out");
+}
+
+void getOptionValuesDedup(Options & options, ArgumentParser & parser)
+{
+    getOptionValue(options.minMatches, parser, "minMatches");
+    getOptionValue(options.maxDiffRate, parser, "maxDiffRate");
+    getOptionValue(options.minQual, parser, "minQual");
 }
 
 ArgumentParser::ParseResult checkOptionValuesWhitelist(Options & options)
@@ -367,6 +421,27 @@ ArgumentParser::ParseResult checkOptionValuesStats(Options & options)
     return ArgumentParser::PARSE_OK;
 }
 
+ArgumentParser::ParseResult checkOptionValuesDedup(Options & options)
+{
+    SEQAN_TRY
+    {
+        std::stringstream what;
+        if (!fileExists(options.inputFile))
+        {
+            what << "The input file '" << options.inputFile << "' does not exist.";
+            SEQAN_THROW(ParseError(what.str()));
+        }
+
+        // TODO
+    }
+    SEQAN_CATCH(ParseError & ex)
+    {
+        std::cerr << "ERROR: " << ex.what() << std::endl;
+        return ArgumentParser::PARSE_ERROR;
+    }
+    return ArgumentParser::PARSE_OK;
+}
+
 void printHeader(ArgumentParser & parser, std::ostringstream & cmd)
 {
     std::ostream_iterator<char> out(std::cerr);
@@ -394,10 +469,10 @@ ArgumentParser::ParseResult parseCommandLine(Options & options, int argc, char c
     typedef ArgumentParser::ParseResult (*CheckValuesFunctionType)(Options &);
 
     // Initialize function arrays.
-    SetupParserFunctionType setupParser[5] = {&setupParserWhitelist, &setupParserIndex, &setupParserCorrect, &setupParserStats};
-    GetValuesFunctionType getArgumentValues[5] = {&getArgumentValuesWhitelist, &getArgumentValuesIndex, &getArgumentValuesCorrect, &getArgumentValuesStats};
-    GetValuesFunctionType getOptionValues[5] = {& getOptionValuesWhitelist, &getOptionValuesIndex, &getOptionValuesCorrect, &getOptionValuesStats};
-    CheckValuesFunctionType checkOptionValues[5] = {&checkOptionValuesWhitelist, &checkOptionValuesIndex, &checkOptionValuesCorrect, &checkOptionValuesStats};
+    SetupParserFunctionType setupParser[5] = {&setupParserWhitelist, &setupParserIndex, &setupParserCorrect, &setupParserStats, &setupParserDedup};
+    GetValuesFunctionType getArgumentValues[5] = {&getArgumentValuesWhitelist, &getArgumentValuesIndex, &getArgumentValuesCorrect, &getArgumentValuesStats, &getArgumentValuesDedup};
+    GetValuesFunctionType getOptionValues[5] = {& getOptionValuesWhitelist, &getOptionValuesIndex, &getOptionValuesCorrect, &getOptionValuesStats, &getOptionValuesDedup};
+    CheckValuesFunctionType checkOptionValues[5] = {&checkOptionValuesWhitelist, &checkOptionValuesIndex, &checkOptionValuesCorrect, &checkOptionValuesStats, &checkOptionValuesDedup};
 
     // Retrieve the command line.
     std::ostringstream command_line;
@@ -415,6 +490,8 @@ ArgumentParser::ParseResult parseCommandLine(Options & options, int argc, char c
         options.cmd = Command::BC_CORRECT;
     else if (strcmp(command, "stats") == 0)
         options.cmd = Command::BC_STATS;
+    else if (strcmp(command, "dedup") == 0)
+        options.cmd = Command::BC_DEDUP;
     else
     {
         std::cerr << "ERROR: Unknown command '" << command << "'." << std::endl;

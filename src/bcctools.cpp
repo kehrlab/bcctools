@@ -7,6 +7,7 @@
 #include "infer_whitelist.h"
 #include "barcode_index.h"
 #include "stats.h"
+#include "deduplicate.h"
 
 using namespace seqan;
 
@@ -23,6 +24,7 @@ void printHelp(char const * name)
     std::cerr << "    \033[1mindex\033[0m     Builds the barcode index from a barcode whitelist and writes it to files." << std::endl;
     std::cerr << "    \033[1mcorrect\033[0m   Cuts off the barcodes in a pair of FASTQ files and corrects them using a barcode whitelist." << std::endl;
     std::cerr << "    \033[1mstats\033[0m     Computes barcode statistics for the given TSV/FASTQ/SAM/BAM file." << std::endl;
+    std::cerr << "    \033[1mdedup\033[0m     Marks optical and/or PCR duplicates within sets of reads labeled with the same barcode." << std::endl;
     std::cerr << std::endl;
     std::cerr << "\033[1mVERSION\033[0m" << std::endl;
     std::cerr << "    " << name << " version: " << VERSION << std::endl;
@@ -55,6 +57,47 @@ void print_correction_stats(unsigned match, unsigned one_error, unsigned unrecog
     std::cerr << "  Unrecognized barcodes:   " << unrecognized << std::endl;
     if (invalid > 0)
         std::cerr << "  Barcodes invalid:       " << invalid << std::endl;
+}
+
+void write_tsv(const ReadPair & rp)
+{
+    // Field 1: Read name (ID).
+    std::cout << rp.qname;
+
+    // Field 2: Corrected barcode or '*' if none.
+    if (rp.cBarcode.size() != 0)
+    {
+        std::cout << "\t" << rp.cBarcode[0];
+        for (unsigned i = 1; i < rp.cBarcode.size(); ++i)
+            std::cout << "," << rp.cBarcode[i];
+    }
+    else
+        std::cout << "\t" << "*";
+
+    // Field 3 and 4: Raw barcode and spacer sequence.
+    std::cout << "\t" << rp.rBarcode;
+    std::cout << "\t" << rp.spacer;
+
+    // Field 5 and 6: Sequence of first and second read.
+    std::cout << "\t" << rp.read1;
+    std::cout << "\t" << rp.read2;
+
+    // Field 7 and 8: Barcode and spacer qual.
+    std::cout << "\t" << rp.qBarcode;
+    std::cout << "\t" << rp.qSpacer;
+
+    // Field 9 and 10: Quality string of first and second read.
+    std::cout << "\t" << rp.qual1;
+    std::cout << "\t" << rp.qual2;
+
+    // Field 11: Duplicate status.
+    std::cout << "\t";
+    if (rp.isDup)
+        std::cout << "dup";
+    else
+        std::cout << ".";
+
+    std::cout << std::endl;
 }
 
 void write_tsv(kseq_t * seq1, kseq_t * seq2, std::vector<seqan::DnaString> & barcodeCorrected, unsigned bcLength, int spacerLength)
@@ -294,6 +337,41 @@ int stats(Options & options)
     return 0;
 }
 
+int dedup(Options & options)
+{
+    typedef ModifiedString<CharString, ModView<FunctorLowcase<char> > > TLowcase;
+    TLowcase lowcaseFilename(options.inputFile);
+
+    if (options.inputFile == "-" || suffix(lowcaseFilename, length(lowcaseFilename) - 3) == "tsv")
+    {
+        Tsv_iterator tsv_it(options.inputFile);
+
+        // Read all reads with the next barcode.
+        while(goNext(tsv_it))
+        {
+            // Identify duplicate reads with this barcode.
+            if (tsv_it.readPairs.size() > 1)
+            {
+                find_sequence_duplicates(tsv_it.readPairs, options.minMatches, options.maxDiffRate, options.minQual);
+                find_optical_duplicates(tsv_it.readPairs);
+            }
+
+            // Write output for this barcode.
+            for (const auto & rp: tsv_it.readPairs)
+            {
+                write_tsv(rp);
+            }
+        }
+    }
+    else
+    {
+        std::cerr << "ERROR: Deduplication currently only possible on TSV output file of bcctools correct." << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
 // =============================================================================
 // Function main()
 // =============================================================================
@@ -332,6 +410,8 @@ int main(int argc, const char ** argv)
             ret = correct(options);
         else if (options.cmd == Command::BC_STATS)
             ret = stats(options);
+        else if (options.cmd == Command::BC_DEDUP)
+            ret = dedup(options);
 
         if (ret == 0)
             printInfo("Finished successfully.");

@@ -8,7 +8,8 @@ enum Command
     BC_INFER_WHITELIST = 0,
     BC_INDEX = 1,
     BC_CORRECT = 2,
-    BC_STATS = 3
+    BC_STATS = 3,
+    BC_DEDUP = 4
 };
 
 struct Options
@@ -27,8 +28,13 @@ struct Options
     double minEntropy;
     unsigned numAlts;
 
+    unsigned minMatches;
+    double maxDiffRate;
+    unsigned minQual;
+
     Options() :
-        bcLength(16), spacerLength(7), whitelistCutoff(0), minEntropy(0.5), numAlts(16)
+        bcLength(16), spacerLength(7), whitelistCutoff(0), minEntropy(0.5), numAlts(16),
+        minMatches(5), maxDiffRate(0.05), minQual(15)
     {}
 };
 

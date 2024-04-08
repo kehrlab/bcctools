@@ -121,23 +121,6 @@ void parse_kseq_comment(Dna5String & barcode, std::vector<seqan::DnaString> & ba
     }
 }
 
-std::vector<DnaString> parseBarcodeList(const char * cBarcode)
-{
-    std::vector<DnaString> barcodes;
-
-    if (cBarcode[0] == '*')
-        return barcodes;
-
-    std::string bc;
-    std::istringstream barcodeStream(cBarcode);
-    while (std::getline(barcodeStream, bc, ','))
-    {
-        DnaString barcode = bc;
-        barcodes.push_back(barcode);
-    }
-    return barcodes;
-}
-
 void stats_tsv(BarcodeStats & stats, CharString & inputFile)
 {
     std::ifstream in(toCString(inputFile));

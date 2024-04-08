@@ -34,7 +34,51 @@ DnaString unhash(uint64_t h, unsigned bcLength)
         h /= ValueSize<Dna>::VALUE;
     }
     return barcode;
+}
 
+// ---------------------------------------------------------------------------------------
+// Functions union() and find()
+// ---------------------------------------------------------------------------------------
+
+bool union_by_index(std::vector<unsigned> & uf, unsigned a, unsigned b)
+{
+    if (a < uf.size() && b < uf.size())
+    {
+        uf[b] = uf[a];
+        return true;
+    }
+    return false;
+}
+
+unsigned find(std::vector<unsigned> & uf, unsigned a)
+{
+    while (uf[a] != a)
+    {
+        uf[a] = uf[uf[a]];
+        a = uf[a];
+    }
+    return a;
+}
+
+// ---------------------------------------------------------------------------------------
+// Function parseBarcodeList()
+// ---------------------------------------------------------------------------------------
+
+std::vector<DnaString> parseBarcodeList(const char * cBarcode)
+{
+    std::vector<DnaString> barcodes;
+
+    if (cBarcode[0] == '*')
+        return barcodes;
+
+    std::string bc;
+    std::istringstream barcodeStream(cBarcode);
+    while (std::getline(barcodeStream, bc, ','))
+    {
+        DnaString barcode = bc;
+        barcodes.push_back(barcode);
+    }
+    return barcodes;
 }
 
 // ---------------------------------------------------------------------------------------
