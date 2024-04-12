@@ -108,12 +108,6 @@ void find_optical_duplicates(std::vector<ReadPair> & readPairs)
 void find_sequence_duplicates(std::vector<ReadPair> & readPairs, unsigned minMatches, double maxDiffRate, unsigned minQual)
 {
     std::sort(std::begin(readPairs), std::end(readPairs), compareBySeq);
-    //std::cout << "find_seq_dups " << readPairs.size() << std::endl;
-
-    // Initialize a union-find array (disjoint set data structure).
-    std::vector<unsigned> uf;
-    for (unsigned i = 0; i < readPairs.size(); ++i)
-        uf.push_back(i);
 
     // Align pairs of read pairs if the first 'minMatches' bases of the first reads in the two pairs match.
     for (unsigned i = 0; i < readPairs.size(); ++i)
@@ -129,16 +123,16 @@ void find_sequence_duplicates(std::vector<ReadPair> & readPairs, unsigned minMat
             // Align the two read pairs
             int score1 = seqan::globalAlignmentScore(readPairs[i].read1, readPairs[j].read1, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
 
-            // Debug output.
-            int s2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
-            if (score1 > -50 && s2 > -50)
-            {
-                std::cout << readPairs[j].read1 << " " << readPairs[j].read2 << std::endl;
-                std::cout << readPairs[i].read1 << " " << readPairs[i].read2 << std::endl << std::endl;
-                std::cout << readPairs[j].qual1 << " " << readPairs[j].qual2 << std::endl;
-                std::cout << readPairs[i].qual1 << " " << readPairs[i].qual2 << std::endl;
-                std::cout << score1 << "  " << s2 << std::endl << std::endl;
-            }
+            // // Debug output.
+            // int s2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
+            // if (score1 > -50 && s2 > -50)
+            // {
+            //     std::cout << readPairs[j].read1 << " " << readPairs[j].read2 << std::endl;
+            //     std::cout << readPairs[i].read1 << " " << readPairs[i].read2 << std::endl << std::endl;
+            //     std::cout << readPairs[j].qual1 << " " << readPairs[j].qual2 << std::endl;
+            //     std::cout << readPairs[i].qual1 << " " << readPairs[i].qual2 << std::endl;
+            //     std::cout << score1 << "  " << s2 << std::endl << std::endl;
+            // }
 
             if (score1 > -maxDiffRate * length(readPairs[i].read1))
             {
