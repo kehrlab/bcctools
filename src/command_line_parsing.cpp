@@ -197,6 +197,10 @@ void addOptionsDedup(ArgumentParser & parser, Options & options)
     setDefaultValue(parser, "minMatches", options.minMatches);
     setMinValue(parser, "minMatches", "1");
 
+    addOption(parser, ArgParseOption("o", "maxOffset", "Maximum offset of x and y coordinates on same tile for two read names in order to be considered as potential duplicates for read name based duplicate detection.", ArgParseArgument::INTEGER));
+    setDefaultValue(parser, "maxOffset", options.maxOffset);
+    setMinValue(parser, "maxOffset", "1");
+
     addOption(parser, ArgParseOption("d", "maxDiffRate", "Maxixmum number of differences per read length for alignment.", ArgParseArgument::DOUBLE));
     setDefaultValue(parser, "maxDiffRate", options.maxDiffRate);
     //setMinValue(parser, "maxDiffRate", "0.001");
@@ -205,6 +209,10 @@ void addOptionsDedup(ArgumentParser & parser, Options & options)
     setDefaultValue(parser, "minQual", options.minQual);
     setMinValue(parser, "minQual", "0");
     setMaxValue(parser, "minQual", "42");
+
+    addOption(parser, ArgParseOption("n", "nameDups", "Mark only duplicates with similar coordinates on tile."));
+
+    addOption(parser, ArgParseOption("s", "seqDups", "Mark only duplicates with matching read1 prefix."));
 }
 
 void addAdvancedOptionsDedup(ArgumentParser & /*parser*/, Options & /*options*/)
@@ -286,8 +294,15 @@ void getOptionValuesStats(Options & options, ArgumentParser & parser)
 void getOptionValuesDedup(Options & options, ArgumentParser & parser)
 {
     getOptionValue(options.minMatches, parser, "minMatches");
+    getOptionValue(options.maxOffset, parser, "maxOffset");
     getOptionValue(options.maxDiffRate, parser, "maxDiffRate");
     getOptionValue(options.minQual, parser, "minQual");
+
+    if(isSet(parser, "seqDups"))
+        options.nameDups = false;
+
+    if(isSet(parser, "nameDups"))
+        options.seqDups = false;
 }
 
 ArgumentParser::ParseResult checkOptionValuesWhitelist(Options & options)
@@ -432,7 +447,11 @@ ArgumentParser::ParseResult checkOptionValuesDedup(Options & options)
             SEQAN_THROW(ParseError(what.str()));
         }
 
-        // TODO
+        if (options.seqDups == false && options.nameDups == false)
+        {
+            what << "Options --seqDups (-s) and --nameDups (-n) are exclusive. Please specify only one or none.";
+            SEQAN_THROW(ParseError(what.str()));
+        }
     }
     SEQAN_CATCH(ParseError & ex)
     {

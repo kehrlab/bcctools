@@ -1,5 +1,3 @@
-#include <seqan/align.h>
-
 #include "deduplicate.h"
 
 bool compareBySeq(ReadPair const& first, ReadPair const& second)
@@ -83,7 +81,7 @@ int getQual(ReadPair & rp, unsigned minQual)
         for (unsigned i = 0; i < length(rp.qual1); ++i)
         {
             // Add qual value if larger than minQual.
-            if (rp.qual1[i] > minQual + 33)
+            if ((unsigned)rp.qual1[i] > minQual + 33)
                 rp.avgQual += rp.qual1[i] - 33;
         }
 
@@ -91,7 +89,7 @@ int getQual(ReadPair & rp, unsigned minQual)
         for (unsigned i = 0; i < length(rp.qual2); ++i)
         {
             // Add qual value if larger than minQual.
-            if (rp.qual2[i] > minQual + 33)
+            if ((unsigned)rp.qual2[i] > minQual + 33)
                 rp.avgQual += rp.qual2[i] - 33;
         }
     }
@@ -99,56 +97,39 @@ int getQual(ReadPair & rp, unsigned minQual)
     return rp.avgQual;
 }
 
-void find_optical_duplicates(std::vector<ReadPair> & readPairs)
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned minMatches, unsigned /*maxOffset*/, DupPrefix const)
 {
-    std::sort(std::begin(readPairs), std::end(readPairs), compareByName);
-    // TODO
+    return prefix(a.read1, minMatches) == prefix(b.read1, minMatches);
 }
 
-void find_sequence_duplicates(std::vector<ReadPair> & readPairs, unsigned minMatches, double maxDiffRate, unsigned minQual)
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned /*minMatches*/, unsigned maxOffset, DupReadName const)
 {
-    std::sort(std::begin(readPairs), std::end(readPairs), compareBySeq);
+    unsigned sizeA = a.qnameSplit.size();
+    unsigned sizeB = b.qnameSplit.size();
 
-    // Align pairs of read pairs if the first 'minMatches' bases of the first reads in the two pairs match.
-    for (unsigned i = 0; i < readPairs.size(); ++i)
+    // Check if minimum requirements on read name composition are met.
+    if (sizeA < 3 || sizeB < 3 || sizeA != sizeB)
+        return false;
+
+    // Check if reads are from the same tile.
+    if (a.qnameSplit[sizeA-3] != b.qnameSplit[sizeB-3])
+        return false;
+
+    // Check if reads are nearby (within maxOffset) on the same tile.
+    int ax = atoi(seqan::toCString(a.qnameSplit[sizeA-2]));
+    int bx = atoi(seqan::toCString(b.qnameSplit[sizeB-2]));
+    if (abs(ax - bx) < maxOffset)
+        return true;
+    else
     {
-        if (readPairs[i].isDup)
-            continue;
-
-        for (unsigned j = i+1; j < readPairs.size() && prefix(readPairs[i].read1, minMatches) == prefix(readPairs[j].read1, minMatches); ++j)
-        {
-            if (readPairs[j].isDup)
-                continue;
-
-            // Align the two read pairs
-            int score1 = seqan::globalAlignmentScore(readPairs[i].read1, readPairs[j].read1, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
-
-            // // Debug output.
-            // int s2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
-            // if (score1 > -50 && s2 > -50)
-            // {
-            //     std::cout << readPairs[j].read1 << " " << readPairs[j].read2 << std::endl;
-            //     std::cout << readPairs[i].read1 << " " << readPairs[i].read2 << std::endl << std::endl;
-            //     std::cout << readPairs[j].qual1 << " " << readPairs[j].qual2 << std::endl;
-            //     std::cout << readPairs[i].qual1 << " " << readPairs[i].qual2 << std::endl;
-            //     std::cout << score1 << "  " << s2 << std::endl << std::endl;
-            // }
-
-            if (score1 > -maxDiffRate * length(readPairs[i].read1))
-            {
-                int score2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
-                if (score2 > -maxDiffRate * length(readPairs[i].read2))
-                {
-                    // Set lower quality read pair as duplicate
-                    if (getQual(readPairs[i], minQual) < getQual(readPairs[j], minQual))
-                    {
-                        readPairs[i].isDup = true;
-                        break; // the loop over j with constant i
-                    }
-                    else
-                        readPairs[j].isDup = true;
-                }
-            }
-        }
+        int ay = atoi(seqan::toCString(a.qnameSplit[sizeA-1]));
+        int by = atoi(seqan::toCString(b.qnameSplit[sizeB-1]));
+        return abs(ay - by) < maxOffset;
     }
+}
+
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned minMatches, unsigned maxOffset, DupBoth const)
+{
+    return isCandidateDup(a, b, minMatches, maxOffset, DupPrefix()) ||
+        isCandidateDup(a, b, minMatches, maxOffset, DupReadName());
 }

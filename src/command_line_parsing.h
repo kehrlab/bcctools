@@ -29,12 +29,15 @@ struct Options
     unsigned numAlts;
 
     unsigned minMatches;
+    unsigned maxOffset;
     double maxDiffRate;
     unsigned minQual;
+    bool nameDups;
+    bool seqDups;
 
     Options() :
         bcLength(16), spacerLength(7), whitelistCutoff(0), minEntropy(0.5), numAlts(16),
-        minMatches(5), maxDiffRate(0.05), minQual(15)
+        minMatches(5), maxOffset(5000), maxDiffRate(0.1), minQual(15), nameDups(true), seqDups(true)
     {}
 };
 

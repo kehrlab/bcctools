@@ -4,7 +4,12 @@
 #include <cassert>
 #include <seqan/sequence.h>
 #include <seqan/stream.h>
+#include <seqan/align.h>
 #include "utils.h"
+
+struct DupPrefix {};
+struct DupReadName {};
+struct DupBoth {};
 
 struct ReadPair {
     seqan::CharString qname;
@@ -46,7 +51,7 @@ struct Tsv_iterator {
 
     seqan::DnaString barcode;
     std::vector<ReadPair> readPairs;
-    
+
     Tsv_iterator(seqan::CharString & filename) :
         in(std::ifstream(toCString(filename)))
     {
@@ -56,7 +61,58 @@ struct Tsv_iterator {
 
 bool goNext(Tsv_iterator & tsv_it);
 
-void find_optical_duplicates(std::vector<ReadPair> & readPairs);
-void find_sequence_duplicates(std::vector<ReadPair> & readPairs, unsigned minMatches, double maxDiffRate, unsigned minQual);
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned minMatches, unsigned maxOffset, DupPrefix const);
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned minMatches, unsigned maxOffset, DupReadName const);
+bool isCandidateDup(ReadPair & a, ReadPair & b, unsigned minMatches, unsigned maxOffset, DupBoth const);
+int getQual(ReadPair & rp, unsigned minQual);
+
+template <typename TDupTag>
+void find_duplicates(std::vector<ReadPair> & readPairs, unsigned minMatches, unsigned maxOffset, double maxDiffRate, unsigned minQual, TDupTag const tag)
+{
+    std::sort(std::begin(readPairs), std::end(readPairs), compareBySeq);
+
+    // Align pairs of read pairs if the first 'minMatches' bases of the first reads in the two pairs match.
+    for (unsigned i = 0; i < readPairs.size(); ++i)
+    {
+        if (readPairs[i].isDup)
+            continue;
+
+        for (unsigned j = i+1; j < readPairs.size() && isCandidateDup(readPairs[i], readPairs[j], minMatches, maxOffset, tag); ++j)
+        {
+            if (readPairs[j].isDup)
+                continue;
+
+            // Align the two read pairs
+            int score1 = seqan::globalAlignmentScore(readPairs[i].read1, readPairs[j].read1, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
+
+            // // Debug output.
+            // int s2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
+            // if (score1 > -50 && s2 > -50)
+            // {
+            //     std::cout << readPairs[i].qname << " " << readPairs[i].read1 << " " << readPairs[i].read2 << std::endl;
+            //     std::cout << readPairs[j].qname << " " << readPairs[j].read1 << " " << readPairs[j].read2 << std::endl << std::endl;
+            //     std::cout << readPairs[i].qname << " " << readPairs[i].qual1 << " " << readPairs[i].qual2 << std::endl;
+            //     std::cout << readPairs[j].qname << " " << readPairs[j].qual1 << " " << readPairs[j].qual2 << std::endl;
+            //     std::cout << score1 << "  " << s2 << std::endl << std::endl;
+            // }
+
+            if (score1 > -maxDiffRate * length(readPairs[i].read1))
+            {
+                int score2 = seqan::globalAlignmentScore(readPairs[i].read2, readPairs[j].read2, seqan::Score<int, seqan::Simple>(0, -1, -1), -3, 3);
+                if (score2 > -maxDiffRate * length(readPairs[i].read2))
+                {
+                    // Set lower quality read pair as duplicate
+                    if (getQual(readPairs[i], minQual) < getQual(readPairs[j], minQual))
+                    {
+                        readPairs[i].isDup = true;
+                        break; // the loop over j with constant i
+                    }
+                    else
+                        readPairs[j].isDup = true;
+                }
+            }
+        }
+    }
+};
 
 #endif // DEDUPLICATE_H_;

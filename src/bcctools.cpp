@@ -352,8 +352,14 @@ int dedup(Options & options)
             // Identify duplicate reads with this barcode.
             if (tsv_it.readPairs.size() > 1)
             {
-                find_sequence_duplicates(tsv_it.readPairs, options.minMatches, options.maxDiffRate, options.minQual);
-                find_optical_duplicates(tsv_it.readPairs);
+                if (options.seqDups == false)
+                    find_duplicates(tsv_it.readPairs, options.minMatches, options.maxOffset, options.maxDiffRate, options.minQual, DupReadName());
+
+                if (options.nameDups == false)
+                    find_duplicates(tsv_it.readPairs, options.minMatches, options.maxOffset, options.maxDiffRate, options.minQual, DupPrefix());
+
+                if (options.seqDups == true && options.nameDups == true)
+                    find_duplicates(tsv_it.readPairs, options.minMatches, options.maxOffset, options.maxDiffRate, options.minQual, DupBoth());
             }
 
             // Write output for this barcode.
